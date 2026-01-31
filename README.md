@@ -34,6 +34,9 @@ graph LR
     C -->|Feature Eng| D[(Postgres Staging)]
     C -->|Train/Predict| E(ML Model: Random Forest)
     E -->|High Risk Customers| F[(Postgres Production)]
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style D fill:#bbf,stroke:#333,stroke-width:2px
+    style F fill:#bfb,stroke:#333,stroke-width:2px
 ```
 
 ## 📂 Cấu trúc Dự án (Project Structure)
@@ -52,6 +55,4 @@ graph LR
 ├── Dockerfile                    # Cấu hình môi trường Python
 ├── requirements.txt              # Các thư viện phụ thuộc
 └── README.md                     # Tài liệu dự án```
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-    style F fill:#bfb,stroke:#333,stroke-width:2px
+
