@@ -54,5 +54,5 @@ graph LR
 ├── docker-compose.yaml           # Cấu hình Infrastructure (Airflow + DBs)
 ├── Dockerfile                    # Cấu hình môi trường Python
 ├── requirements.txt              # Các thư viện phụ thuộc
-└── README.md                     # Tài liệu dự án```
+└── README.md                     # Tài liệu dự án
 
