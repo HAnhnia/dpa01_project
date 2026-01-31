@@ -1,0 +1,92 @@
+version: '3.8'
+services:
+  # 1. DB Metadata cho Airflow
+  postgres_airflow:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    volumes:
+      - pg_airflow_data:/var/lib/postgresql/data
+
+  # 2. DB Staging (Dữ liệu tạm - Nội bộ Docker)
+  postgres_staging:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=etl_user
+      - POSTGRES_PASSWORD=etl_pass
+      - POSTGRES_DB=staging_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_staging_data:/var/lib/postgresql/data
+
+  # 3. Airflow Webserver
+  airflow-webserver:
+    build: .
+    command: webserver
+    ports:
+      - "8081:8080" # Map ra cổng 8081 máy thật
+    depends_on:
+      - postgres_airflow
+      - postgres_staging
+    extra_hosts: # Giúp Docker nhìn thấy máy Windows thật
+      - "host.docker.internal:host-gateway"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - PYTHONPATH=/opt/airflow/plugins
+
+      # --- KẾT NỐI STAGING (Trong Docker) ---
+      - STAGING_CONN_STR=postgresql+psycopg2://etl_user:etl_pass@postgres_staging:5432/staging_db
+
+      # --- KẾT NỐI PROD (Ra máy thật Windows - DB dvdrental) ---
+      - PROD_CONN_STR=postgresql+psycopg2://${POSTGRES_PROD_USER}:${POSTGRES_PROD_PASSWORD}@host.docker.internal:5432/${POSTGRES_PROD_DB}
+
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./scripts:/opt/airflow/scripts
+
+  # 4. Airflow Scheduler
+  airflow-scheduler:
+    build: .
+    command: scheduler
+    depends_on:
+      - postgres_airflow
+      - postgres_staging
+    extra_hosts: # Cũng phải thêm vào đây
+      - "host.docker.internal:host-gateway"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - PYTHONPATH=/opt/airflow/plugins
+
+      # --- Copy y hệt bên trên ---
+      - STAGING_CONN_STR=postgresql+psycopg2://etl_user:etl_pass@postgres_staging:5432/staging_db
+      - PROD_CONN_STR=postgresql+psycopg2://${POSTGRES_PROD_USER}:${POSTGRES_PROD_PASSWORD}@host.docker.internal:5432/${POSTGRES_PROD_DB}
+
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./scripts:/opt/airflow/scripts
+
+  airflow-init:
+    build: .
+    depends_on:
+      - postgres_airflow
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres_airflow/airflow
+    command: >
+      bash -c "airflow db migrate && airflow users create --username airflow --password airflow --firstname Admin --lastname User --role Admin --email admin@example.com || true"
+
+volumes:
+  pg_airflow_data:
+  pg_staging_data:
