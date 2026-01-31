@@ -1,0 +1,18 @@
+# Bỏ qua file chứa mật khẩu (QUAN TRỌNG)
+.env
+
+# Bỏ qua thư mục ảo Python
+.venv/
+venv/
+__pycache__/
+
+# Bỏ qua logs và data tạm của Airflow
+logs/
+plugins/__pycache__/
+dags/__pycache__/
+data/state.txt
+
+# File hệ thống
+.DS_Store
+.idea/
+.vscode/
